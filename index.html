@@ -12,7 +12,6 @@
     'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
     })(window,document,'script','dataLayer','GTM-TT2TWP6C');</script>
     <!-- End Google Tag Manager -->
-
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; margin: 0; padding: 20px; color: #333; background: #f9f9f9; }
         header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-radius: 8px; }
@@ -20,9 +19,11 @@
         nav button:hover { text-decoration: underline; }
         .page { display: none; background: #fff; padding: 30px; margin-top: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .page.active { display: block; }
-        .product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 20px; }
-        .product-card { border: 1px solid #eee; padding: 15px; border-radius: 6px; text-align: center; background: #fff; }
-        .product-card img { max-width: 100%; height: 120px; object-fit: contain; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px; }
+        .product-card { border: 1px solid #eee; padding: 15px; border-radius: 6px; text-align: center; background: #fff; cursor: pointer; transition: transform 0.2s; }
+        .product-card:hover { transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+        .product-image { font-size: 64px; background: #f4f4f4; padding: 20px; border-radius: 6px; margin-bottom: 10px; }
+        .product-detail-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 20px; }
         button.btn { background: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-top: 10px; }
         button.btn:hover { background: #218838; }
         button.btn-checkout { background: #007bff; width: 100%; font-size: 18px; }
@@ -48,7 +49,7 @@
         </nav>
     </header>
 
-    <div id="page-home" class="page active">
+    <div id="page-home" class="page">
         <h1>Welcome to the GTM DataLayer Testing Ground</h1>
         <p>This is a fully client-side e-commerce store built to help you practice setting up Google Analytics 4 (GA4) or Google Ads tags via Google Tag Manager.</p>
         <p>Click below to view our highly exclusive inventory.</p>
@@ -58,6 +59,11 @@
     <div id="page-shop" class="page">
         <h1>Our Products</h1>
         <div class="product-grid" id="product-list"></div>
+    </div>
+
+    <div id="page-product-detail" class="page">
+        <button onclick="navigateTo('shop')" style="background:none; border:none; color:#0066cc; cursor:pointer; font-size:16px; padding:0; margin-bottom:20px;">&larr; Back to Shop</button>
+        <div class="product-detail-container" id="product-detail-content"></div>
     </div>
 
     <div id="page-cart" class="page">
@@ -95,32 +101,39 @@
     </div>
 
     <script>
-        // Global variables and mock database
+        // Global variables and database setup
         window.dataLayer = window.dataLayer || [];
         
         const products = [
-            { id: "p1", name: "DataLayer Detector Sunglasses", price: 49.99, category: "Apparel" },
-            { id: "p2", name: "GTM Trigger Coffee Mug", price: 19.99, category: "Kitchenware" },
-            { id: "p3", name: "Google Analytics Comfort Hoodie", price: 89.99, category: "Apparel" }
+            { id: "p1", name: "DataLayer Detector Sunglasses", price: 49.99, category: "Apparel", img: "🕶️", desc: "See the web through tracking-tinted lenses. Blocks 100% of bad schemas." },
+            { id: "p2", name: "GTM Trigger Coffee Mug", price: 19.99, category: "Kitchenware", img: "☕", desc: "Fires a caffeinated custom event directly into your system every morning." },
+            { id: "p3", name: "Google Analytics Comfort Hoodie", price: 89.99, category: "Apparel", img: "🧥", desc: "Warm, cozy, and perfectly structured. Guaranteed to decrease bounce rate feeling." },
+            { id: "p4", name: "CSS Selector Mechanical Keyboard", price: 129.99, category: "Electronics", img: "⌨️", desc: "Click exactly what you target. Enhanced switches for pristine custom HTML tag setups." },
+            { id: "p5", name: "JavaScript Variable Notebook", price: 14.50, category: "Stationery", img: "📓", desc: "Store your thoughts dynamically. Values persist across page turn refreshments." },
+            { id: "p6", name: "Server-Side Tagging Security Shield", price: 199.99, category: "Software", img: "🛡️", desc: "Keep PII safe. This beautiful desktop display piece keeps third-party scripts at bay." },
+            { id: "p7", name: "Regex Master Desktop Hourglass", price: 34.00, category: "Office Decor", img: "⏳", desc: "Matches patterns over time. Helps you debug complex include configurations." },
+            { id: "p8", name: "Enhanced Conversions Magic Wand", price: 55.00, category: "Novelty", img: "🪄", desc: "Instantly matches hashes and first-party data structures effortlessly." },
+            { id: "p9", name: "Cookie Consent Desktop Cactus", price: 24.99, category: "Office Decor", img: "🌵", desc: "Sits on your desk. Prickly to unauthorized tracking scripts, sweet to opted-in users." }
         ];
 
         let cart = [];
+        let currentProductId = null; 
 
-        // 1. Initialize Product Listing
+        // 1. Initialize Product Listing View
         function renderProducts() {
             const container = document.getElementById('product-list');
             container.innerHTML = products.map(product => `
-                <div class="product-card">
-                    <div style="font-size:48px; margin-bottom:10px;">📦</div>
+                <div class="product-card" onclick="viewProductDetail('${product.id}')">
+                    <div class="product-image">${product.img}</div>
                     <h3>${product.name}</h3>
                     <p style="color:#666;">${product.category}</p>
                     <p style="font-weight:bold; font-size:18px;">$${product.price.toFixed(2)}</p>
-                    <button class="btn" onclick="addToCart('${product.id}')">Add to Cart</button>
+                    <button class="btn" onclick="event.stopPropagation(); addToCart('${product.id}')">Add to Cart</button>
                 </div>
             `).join('');
 
             // GA4 view_item_list event
-            dataLayer.push({ ecommerce: null }); // Clear previous ecommerce object
+            dataLayer.push({ ecommerce: null }); 
             dataLayer.push({
                 event: "view_item_list",
                 ecommerce: {
@@ -137,7 +150,44 @@
             });
         }
 
-        // 2. Add to Cart Functionality
+        // 2. Render Product Detail Page View
+        function viewProductDetail(productId) {
+            currentProductId = productId;
+            const product = products.find(p => p.id === productId);
+            const container = document.getElementById('product-detail-content');
+
+            container.innerHTML = `
+                <div style="font-size: 150px; text-align: center; background: #f4f4f4; border-radius: 8px; padding: 4px;">${product.img}</div>
+                <div>
+                    <h1>${product.name}</h1>
+                    <p style="color: #666; font-size: 18px;">Category: <strong>${product.category}</strong></p>
+                    <p style="font-size: 16px; line-height: 1.8; margin-top: 20px;">${product.desc}</p>
+                    <h2 style="color: #333; margin-top: 30px;">$${product.price.toFixed(2)}</h2>
+                    <button class="btn" style="font-size:16px; padding: 12px 24px; margin-top: 20px;" onclick="addToCart('${product.id}')">Add to Cart</button>
+                </div>
+            `;
+
+            navigateTo('product-detail');
+
+            // GA4 view_item event (Product Page View)
+            dataLayer.push({ ecommerce: null });
+            dataLayer.push({
+                event: "view_item",
+                ecommerce: {
+                    value: product.price,
+                    currency: "USD",
+                    items: [{
+                        item_id: product.id,
+                        item_name: product.name,
+                        item_category: product.category,
+                        price: product.price,
+                        quantity: 1
+                    }]
+                }
+            });
+        }
+
+        // 3. Add to Cart Functionality
         function addToCart(productId) {
             const product = products.find(p => p.id === productId);
             const existingItem = cart.find(item => item.id === productId);
@@ -175,7 +225,7 @@
             document.getElementById('cart-count').innerText = count;
         }
 
-        // 3. Render Cart View
+        // 4. Render Cart View
         function renderCart() {
             const container = document.getElementById('cart-content');
             const totalContainer = document.getElementById('cart-total');
@@ -220,7 +270,7 @@
             });
         }
 
-        // 4. Render Checkout View
+        // 5. Render Checkout View
         function renderCheckout() {
             const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
             document.getElementById('checkout-total').innerText = `Total Due: $${total.toFixed(2)}`;
@@ -243,7 +293,7 @@
             });
         }
 
-        // 5. Process Purchase
+        // 6. Process Purchase
         function processPurchase(e) {
             e.preventDefault();
             
@@ -257,7 +307,7 @@
                 ecommerce: {
                     transaction_id: orderId,
                     value: total,
-                    tax: (total * 0.08).toFixed(2), // Mock 8% tax
+                    tax: (total * 0.08).toFixed(2), 
                     shipping: 0.00,
                     currency: "USD",
                     items: cart.map(item => ({
@@ -274,34 +324,42 @@
             document.getElementById('conf-order-id').innerText = orderId;
             document.getElementById('conf-total').innerText = `$${total.toFixed(2)}`;
 
-            // Clear Cart
             cart = [];
             updateCartCount();
-
-            // Redirect to confirmation page
             navigateTo('confirmation');
         }
 
         // Routing engine
         function navigateTo(pageId) {
-            // Hide all pages
+            // Hide all views safely
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             
-            // Show requested page
+            // Activate target view display
             document.getElementById(`page-${pageId}`).classList.add('active');
 
-            // Virtual Page View trigger logic / Page data updates
+            // View-specific script triggers
             if (pageId === 'shop') renderProducts();
             if (pageId === 'cart') renderCart();
             if (pageId === 'checkout') renderCheckout();
 
-            // Push a virtual pageview event for Single Page App (SPA) tracking practice
+            // Construct smart virtual paths for querying practice
+            let dynamicPath = '/' + pageId;
+            if (pageId === 'product-detail' && currentProductId) {
+                dynamicPath += '?id=' + currentProductId;
+            }
+
+            // Fire standard single-page app virtual view event
             dataLayer.push({
                 event: 'virtual_pageview',
-                page_path: '/' + pageId,
-                page_title: pageId.charAt(0).toUpperCase() + pageId.slice(1) + ' | GTM Sandbox'
+                page_path: dynamicPath,
+                page_title: pageId.charAt(0).toUpperCase() + pageId.slice(1).replace('-', ' ') + ' | GTM Sandbox'
             });
         }
+
+        // Force app initialization through router to capture the very first home screen display
+        document.addEventListener("DOMContentLoaded", function() {
+            navigateTo('home');
+        });
     </script>
 </body>
 </html>
